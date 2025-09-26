@@ -17,12 +17,13 @@ import java.util.UUID;
 public class PresignService {
     private final S3Presigner s3Presigner;
     private final String bucket;
-    private final int expirySeconds;
+    private final int presignExpirySeconds;
 
-    public PresignService(S3Presigner s3Presigner, @Value("${app.aws.s3.bucket}") String bucket, @Value("${app.aws.s3.presignExpirySeconds}") int expirySeconds) {
+    public PresignService(S3Presigner s3Presigner, @Value("${app.aws.s3.bucket:csv-importer-bucket-tony}") String bucket,
+                          @Value("${app.aws.s3.presignExpirySeconds:900}") int presignExpirySeconds) {
         this.s3Presigner = s3Presigner;
         this.bucket = bucket;
-        this.expirySeconds = expirySeconds;
+        this.presignExpirySeconds = presignExpirySeconds;
     }
 
     public PresignResponse createCsvPresign(){
@@ -32,7 +33,7 @@ public class PresignService {
                 .bucket(bucket).key(key).contentType("text/csv").build();
 
         PresignedPutObjectRequest presignedPutObjectRequest = s3Presigner.presignPutObject(b -> b
-                .signatureDuration(Duration.ofSeconds(expirySeconds))
+                .signatureDuration(Duration.ofSeconds(presignExpirySeconds))
 
                 .putObjectRequest(putObjectRequest));
 

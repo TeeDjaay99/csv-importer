@@ -1,0 +1,20 @@
+{
+  "Comment": "Mitt workflow för att importera CSV-data",
+  "StartAt": "ValidateInput",
+  "States": {
+    "ValidateInput": {
+      "Type": "Pass",
+      "Result": "Input validated",
+      "Next": "Enqueue"
+    },
+    "Enqueue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "https://sqs.eu-north-1.amazonaws.com/746669216309/csv-importer-queue",
+        "MessageBody.$": "States.JsonToString($)"
+      },
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,22 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: csv-importer
+  main:
+    allow-bean-definition-overriding: true
+
+
+
+app:
+  aws:
+    region: eu-north-1
+    s3:
+      bucket: csv-importer-bucket-tony
+      presignExpirySeconds: 900
+    dynamodb:
+      tableJobs: ImportJobs
+      tableData: DataItems
+    sqs:
+      queueUrl: https://sqs.eu-north-1.amazonaws.com/746669216309/csv-importer-queue
