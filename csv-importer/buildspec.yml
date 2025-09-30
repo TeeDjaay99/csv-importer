@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+  pre_build:
+    commands:
+      - echo "Pre-build: Maven version"
+      - - mvn -v
+  build:
+    commands:
+      - echo "Build: package JAR"
+      - mvn -q clean package
+  post_build:
+    commands:
+      - echo "Post-build: $(date)"
+
+artifacts:
+  files:
+    -target/*.jar
+  discard-paths: yes
+cache:
+  paths:
+    - ~/.m2/**/*
