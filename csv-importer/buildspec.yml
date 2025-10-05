@@ -10,11 +10,11 @@ phases:
       - - mvn -v
   build:
     commands:
-      - echo "Build: package JAR"
-      - mvn -q clean package
+      - echo "Build: package JAR and run tests"
+      - mvn clean package
   post_build:
     commands:
-      - echo "Post-build: $(date)"
+      - echo "Build completed: $(date)"
 
 artifacts:
   files:
