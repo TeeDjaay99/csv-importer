@@ -7,7 +7,7 @@ phases:
   pre_build:
     commands:
       - echo "Pre-build: show versions"
-      -  mvn -v
+      - mvn -v
       - cd csv-importer
 
   build:
