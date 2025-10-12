@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+  pre_build:
+    commands:
+      - echo "Pre-build - show versions"
+      - mvn -v
+      - cd csv-importer
+  build:
+    commands:
+      - echo "Build - package JAR and run tests"
+      - mvn -B -U clean package
+  post_build:
+    commands:
+      - echo "Build completed"
+
+artifacts:
+  base-directory: csv-importer/target
+  files:
+    - "*.jar"
+  discard-paths: yes
+
+cache:
+  paths:
+    - "/root/.m2/**/*"
