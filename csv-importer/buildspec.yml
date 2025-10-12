@@ -9,7 +9,6 @@ phases:
       - echo "Pre-build: show versions"
       - mvn -v
       - cd csv-importer
-
   build:
     commands:
       - echo "Build: package JAR and run tests"
@@ -21,8 +20,9 @@ phases:
 artifacts:
   base-directory: csv-importer/target
   files:
-    - "*.jar"
+    - '*.jar'
   discard-paths: yes
+
 cache:
   paths:
     - '/root/.m2/**/*'
