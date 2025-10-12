@@ -6,20 +6,23 @@ phases:
       java: corretto21
   pre_build:
     commands:
-      - echo "Pre-build: Maven version"
-      - - mvn -v
+      - echo "Pre-build: show versions"
+      -  mvn -v
+      - cd csv-importer
+
   build:
     commands:
       - echo "Build: package JAR and run tests"
-      - mvn clean package
+      - mvn -B -U clean package
   post_build:
     commands:
       - echo "Build completed: $(date)"
 
 artifacts:
+  base-directory: csv-importer/target
   files:
-    -target/*.jar
+    - "*.jar"
   discard-paths: yes
 cache:
   paths:
-    - ~/.m2/**/*
+    - '/root/.m2/**/*'
