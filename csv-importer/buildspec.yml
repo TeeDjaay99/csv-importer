@@ -16,11 +16,11 @@ phases:
   post_build:
     commands:
       - echo "Build completed"
+      - mv target/*.jar application.jar
 
 artifacts:
-  base-directory: csv-importer/target
   files:
-    - "*.jar"
+    - csv-importer/application.jar
   discard-paths: yes
 
 cache:
