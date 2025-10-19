@@ -18,5 +18,6 @@ app:
     dynamodb:
       tableJobs: ImportJobs
       tableData: DataItems
-    sqs:
-      queueUrl: https://sqs.eu-north-1.amazonaws.com/746669216309/csv-importer-queue
+    sns:
+      topicArn: arn:aws:sns:eu-north-1:746669216309:csv-importer-events
+

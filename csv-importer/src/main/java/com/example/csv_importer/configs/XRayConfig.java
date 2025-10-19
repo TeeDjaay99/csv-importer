@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
-import software.amazon.awssdk.services.sqs.SqsClientBuilder;
+import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 @Configuration
 public class XRayConfig {
@@ -43,7 +43,7 @@ public class XRayConfig {
         );
     }
 
-    public static void instrument(SqsClientBuilder builder){
+    public static void instrument(SnsClientBuilder builder){
         builder.overrideConfiguration(
                 ClientOverrideConfiguration.builder()
                         .addExecutionInterceptor(new TracingInterceptor())

@@ -12,8 +12,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.SqsClientBuilder;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.SnsClientBuilder;
 
 @Configuration
 public class AwsClientsConfig {
@@ -57,13 +57,13 @@ public class AwsClientsConfig {
     }
 
     @Bean
-    public SqsClient sqsClient(Region region) {
-        SqsClientBuilder b = SqsClient.builder()
+    public SnsClient snsClient(Region region) {
+        SnsClientBuilder b = SnsClient.builder()
                 .region(region)
                 .credentialsProvider(DefaultCredentialsProvider.builder().build());
 
         XRayConfig.instrument(b);
-
         return b.build();
     }
+
 }

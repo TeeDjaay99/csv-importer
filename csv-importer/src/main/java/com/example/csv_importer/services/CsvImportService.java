@@ -3,6 +3,8 @@ package com.example.csv_importer.services;
 
 import com.example.csv_importer.repositories.ImportJobRepository;
 import com.example.csv_importer.utils.CsvParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -18,18 +20,25 @@ import java.util.UUID;
 
 @Service
 public class CsvImportService {
+    private static final Logger log = LoggerFactory.getLogger(CsvImportService.class);
 
     private final S3Client s3Client;
     private final DynamoDbClient dynamoDbClient;
     private final ImportJobRepository importJobRepository;
+    private final NotificationService notificationService;
+
     private final String bucket;
     private final String tableData;
 
     public CsvImportService(S3Client s3Client, DynamoDbClient dynamoDbClient, ImportJobRepository importJobRepository,
-                            @Value("${app.aws.s3.bucket:csv-importer-bucket-tony}") String bucket, @Value("${app.aws.dynamodb.tableData:DataItems}") String tableData) {
+                            NotificationService notificationService,
+                            @Value("${app.aws.s3.bucket:csv-importer-bucket-tony}") String bucket,
+                            @Value("${app.aws.dynamodb.tableData:DataItems}") String tableData
+    ) {
         this.s3Client = s3Client;
         this.dynamoDbClient = dynamoDbClient;
         this.importJobRepository = importJobRepository;
+        this.notificationService = notificationService;
         this.bucket = bucket;
         this.tableData = tableData;
     }
@@ -40,41 +49,68 @@ public class CsvImportService {
         int processedCount = 0;
         int failedCount = 0;
 
-        try (InputStream inputStream = s3Client.getObject(request -> request.bucket(bucket).key(s3Key))) {
 
-            List<Map<String, String>> parsedRows = CsvParser.parse(inputStream);
+        notificationService.publish("IMPORT_STARTED",Map.of("importId", importId, "s3Key", s3Key));
 
-            for (Map<String, String> rowMap : parsedRows) {
+        try (InputStream inputStream = s3Client.getObject(b -> b.bucket(bucket).key(s3Key))) {
+
+            // Tolka CSV till en lista av rader (Map med kolumnnamn → värden)
+            List<Map<String, String>> CsvRows = CsvParser.parse(inputStream);
+
+            // Loopa igenom varje rad och försök skriva till DynamoDB
+            for (Map<String, String> currentRow : CsvRows) {
                 try {
-                    Map<String, AttributeValue> dynamoItem = new HashMap<>();
+                    Map<String, AttributeValue> dynamoDbItem = new HashMap<>();
 
-                    String id = rowMap.getOrDefault("id", UUID.randomUUID().toString());
-                    dynamoItem.put("id", AttributeValue.builder().s(id).build());
+                    String rowId = currentRow.getOrDefault("id", UUID.randomUUID().toString());
+                    dynamoDbItem.put("id", AttributeValue.builder().s(rowId).build());
 
-                    for (Map.Entry<String, String> entry : rowMap.entrySet()) {
-                        String key = entry.getKey();
-                        if (!entry.getKey().equals("id")) {
-                            dynamoItem.put(entry.getKey(), AttributeValue.builder().s(entry.getValue()).build());
+                    for (Map.Entry<String, String> column : currentRow.entrySet()) {
+                        if (!column.getKey().equals("id")) {
+                            dynamoDbItem.put(column.getKey(), AttributeValue.builder().s(column.getValue()).build());
                         }
                     }
 
-                    dynamoDbClient.putItem(PutItemRequest.builder()
-                            .tableName(tableData)
-                            .item(dynamoItem)
-                            .build());
+                    dynamoDbClient.putItem(
+                            PutItemRequest.builder()
+                                    .tableName(tableData)
+                                    .item(dynamoDbItem)
+                                    .build()
+                    );
 
                     processedCount++;
-                    importJobRepository.incrementCounts(importId, 1, 0);
 
-                } catch (Exception rowException) {
+
+                } catch (Exception rowError) {
                     failedCount++;
-                    importJobRepository.incrementCounts(importId, 0, 1);
+                    log.error("Fel vid import av rad: {}", rowError.getMessage());
+                    notificationService.publish("ROW_FAILED", Map.of("importId", importId, "error", rowError.getMessage()));
+
                 }
             }
+
+
+            String finalStatus = (failedCount == 0) ? "DONE" : "FAILED";
+            importJobRepository.updateStatus(importId, finalStatus);
+            importJobRepository.incrementCounts(importId, processedCount, failedCount);
+
+            notificationService.publish("IMPORT_FINISHED", Map.of("importId", importId, "s3Key", s3Key, "processed", processedCount,
+                    "failed", failedCount, "status", finalStatus));
+
+        } catch (Exception e) {
+            log.error("Fel vid import: {}", e.getMessage());
+            importJobRepository.updateStatus(importId, "FAILED");
+
+            notificationService.publish("IMPORT_FAILED", Map.of("importId", importId, "error", e.getMessage()));
+
+            throw e;
         }
-        importJobRepository.overwriteTotalsAndStatus(importId, processedCount, failedCount, failedCount == 0 ? "DONE" : "FAILED");
+        log.info("Import slutförd - processed={}, failed={}", processedCount, failedCount);
+
 
     }
+
+
 }
 
 

@@ -89,7 +89,7 @@ public class ImportJobRepository {
                 )));
     }
 
-    /** Hämta jobb för status-endpointen. */
+    // Hämta jobb för status-endpointen
     public Optional<ImportJob> get(String importId) {
         var res = dynamoDbClient.getItem(r -> r
                 .tableName(tableJobs)
