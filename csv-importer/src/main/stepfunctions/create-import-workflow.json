@@ -1,18 +1,19 @@
 {
-  "Comment": "Mitt workflow för att importera CSV-data",
+  "Comment": "Mitt workflow för att notifiera via SNS efter import",
   "StartAt": "ValidateInput",
   "States": {
     "ValidateInput": {
       "Type": "Pass",
       "Result": "Input validated",
-      "Next": "Enqueue"
+      "Next": "PublishToSNS"
     },
-    "Enqueue": {
+    "PublishToSNS": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::aws-sdk:sqs:sendMessage",
+      "Resource": "arn:aws:states:::aws-sdk:sns:publish",
       "Parameters": {
-        "QueueUrl": "https://sqs.eu-north-1.amazonaws.com/746669216309/csv-importer-queue",
-        "MessageBody.$": "States.JsonToString($)"
+        "TopicArn": "arn:aws:sns:eu-north-1:746669216309:csv-importer-events",
+        "Subject": "Import Notification",
+        "Message.$": "States.JsonToString($)"
       },
       "End": true
     }
