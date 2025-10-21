@@ -14,7 +14,7 @@ via Elastic Beanstalk(EC2).
 
 ---
 # Arkitektur
-
+![Diagram skiss.png](images/Diagram%20skiss.png)
 
 ---
 
