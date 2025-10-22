@@ -17,28 +17,31 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/imports")
 public class ImportController {
-    private final PresignService presignService;
-    private final ImportJobService importJobService;
+    private final PresignService presignService;                // Gör presigned URL till S3
+    private final ImportJobService importJobService;            // Skapar/hanterar jobb
     private final ImportJobRepository importJobRepository;
-    private final CsvImportService csvImportService;
+    private final CsvImportService csvImportService;            // Kör importen
 
-    public ImportController(PresignService presignService, ImportJobService importJobService, ImportJobRepository importJobRepository, CsvImportService csvImportService) {
+    public ImportController(PresignService presignService, ImportJobService importJobService,
+                            ImportJobRepository importJobRepository, CsvImportService csvImportService) {
         this.presignService = presignService;
         this.importJobService = importJobService;
         this.importJobRepository = importJobRepository;
         this.csvImportService = csvImportService;
     }
-
+    // Skapa presign URL, klienten använder för att ladda upp csv till S3
     @PostMapping("/presign")
     public ResponseEntity<PresignResponse> createPresignUrl() {
         PresignResponse presignResponse = presignService.createCsvPresign();
         return ResponseEntity.ok(presignResponse);
     }
-
+    // Start import, får s3Key fil och triggar import
     @PostMapping("/start")
     public ResponseEntity<ImportStatusResponse> startImport(@Valid @RequestBody StartImportRequest startImportRequest) throws Exception {
+        // Skapa ett nytt import-jobb (id + status i DynamoDB ImportJobs)
         ImportJob newImportJob = importJobService.createPending(startImportRequest.s3Key());
 
+        // Kör själva importen (läs S3, spara till DDB, skicka SNS)
         csvImportService.runImport(newImportJob.getImportId(), startImportRequest.s3Key());
 
         ImportJob finalImportJobState = importJobRepository
@@ -54,6 +57,7 @@ public class ImportController {
         return ResponseEntity.ok(response);
     }
 
+    // Hämta status för importjobb (Import-id)
     @GetMapping("/{importId}/status")
     public ResponseEntity<ImportStatusResponse> getImportStatus(@PathVariable String importId) {
         Optional<ImportJob> maybeImportJob = importJobRepository.get(importId);

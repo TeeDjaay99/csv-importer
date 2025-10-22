@@ -32,7 +32,7 @@ public class AwsClientsConfig {
                 .region(region)
                 .credentialsProvider(DefaultCredentialsProvider.builder().build());
 
-        XRayConfig.instrument(b);
+        XRayConfig.instrument(b); // Lägger på X-Ray spårning
 
         return b.build();
     }

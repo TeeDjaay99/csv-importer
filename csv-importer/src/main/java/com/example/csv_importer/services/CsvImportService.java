@@ -18,6 +18,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ *  Servicen hämtar och gör själva "Importjobbet"
+ *  Hämtar CSV-filen i S3
+ *  Tolkar raderna (id, name, age)
+ *  Skriver varje rad som objekt i DynamoDB
+ *  Håller koll på antalet lyckade/misslyckade rader
+ *  Skickar start och slut notiser via SNS
+ */
+
 @Service
 public class CsvImportService {
     private static final Logger log = LoggerFactory.getLogger(CsvImportService.class);
@@ -27,8 +36,8 @@ public class CsvImportService {
     private final ImportJobRepository importJobRepository;
     private final NotificationService notificationService;
 
-    private final String bucket;
-    private final String tableData;
+    private final String bucket;      // S3 bucketen där filerna ligger
+    private final String tableData;  // DynamoDB tabellen där raderna sparas
 
     public CsvImportService(S3Client s3Client, DynamoDbClient dynamoDbClient, ImportJobRepository importJobRepository,
                             NotificationService notificationService,
@@ -44,22 +53,24 @@ public class CsvImportService {
     }
 
     public void runImport(String importId, String s3Key) throws Exception {
+        // Markera imporjobbet som pågående
         importJobRepository.updateStatus(importId, "IN_PROGRESS");
 
-        int processedCount = 0;
-        int failedCount = 0;
+        int processedCount = 0; // Antal rader som gick bra
+        int failedCount = 0;    // Antal rader som misslyckades
 
-
+        // Skickar notis om att importen startar
         notificationService.publish("IMPORT_STARTED",Map.of("importId", importId, "s3Key", s3Key));
 
         try (InputStream inputStream = s3Client.getObject(b -> b.bucket(bucket).key(s3Key))) {
 
-            // Tolka CSV till en lista av rader (Map med kolumnnamn → värden)
+            // Tolka CSV till en lista av rader (Map med kolumnnamn -> värden)
             List<Map<String, String>> CsvRows = CsvParser.parse(inputStream);
 
             // Loopa igenom varje rad och försök skriva till DynamoDB
             for (Map<String, String> currentRow : CsvRows) {
                 try {
+                    // Gör om radens fält till DynamoDB-format
                     Map<String, AttributeValue> dynamoDbItem = new HashMap<>();
 
                     String rowId = currentRow.getOrDefault("id", UUID.randomUUID().toString());
@@ -105,7 +116,7 @@ public class CsvImportService {
 
             throw e;
         }
-        log.info("Import slutförd - processed={}, failed={}", processedCount, failedCount);
+        log.info("Import slutförd - processed={}, failed={}", processedCount, failedCount); // visar importen färdig och sen hur mycket som processats och hur många som kan ha failat
 
 
     }

@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.sns.SnsClientBuilder;
 @Configuration
 public class XRayConfig {
     static {
+        // Konfigurerar AWS X-Ray's globala recorder med standardinställningar
         AWSXRay.setGlobalRecorder(AWSXRayRecorderBuilder.defaultRecorder());
     }
 
@@ -23,7 +24,7 @@ public class XRayConfig {
     public FilterRegistrationBean<AWSXRayServletFilter> xrayFilter() {
         FilterRegistrationBean<AWSXRayServletFilter> bean = new FilterRegistrationBean<>();
         bean.setFilter(new AWSXRayServletFilter("csv-importer")); // service namn i X-Ray
-        bean.setOrder(1);
+        bean.setOrder(1); // Sätter ordningen till 1 för att säkerställa att det körs tidigt i filterkedjan
         return bean;
     }
 

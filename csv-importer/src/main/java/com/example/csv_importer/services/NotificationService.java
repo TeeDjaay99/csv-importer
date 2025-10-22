@@ -20,7 +20,7 @@ public class NotificationService {
 
     private final SnsClient sns;
     private final String topicArn;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper; // Konverterar Java-objekt till JSON
 
     public NotificationService(SnsClient sns, ObjectMapper objectMapper, @Value("${app.aws.sns.topicArn}") String topicArn) {
         this.sns = sns;
@@ -30,18 +30,18 @@ public class NotificationService {
 
     public void publish(String event, Map<String, ?> attributes) {
         if (topicArn == null || topicArn.isBlank()) {
-            log.debug("SNS topicArn saknas - hoppar över publish för event={}", event);
+            log.debug("SNS topicArn saknas - hoppar över publish för event={}", event); // Kontrollera om topicArn är konfigurerat
             return;
         }
         try {
-            Map<String, Object> messageBody = new HashMap<>();
+            Map<String, Object> messageBody = new HashMap<>(); // Bygger upp meddelandets innehåll
             if (attributes != null) messageBody.putAll(attributes);
             messageBody.putIfAbsent("event", event);
             messageBody.putIfAbsent("timestamp", Instant.now().toString());
 
-            String json = objectMapper.writeValueAsString(messageBody);
+            String json = objectMapper.writeValueAsString(messageBody); // // Konvertera message body till JSON-sträng
 
-            sns.publish(PublishRequest.builder()
+            sns.publish(PublishRequest.builder() // // Skicka meddelandet till SNS topic
                     .topicArn(topicArn)
                     .subject(event)
                     .message(json)
@@ -50,7 +50,7 @@ public class NotificationService {
             log.info("SNS event '{}' skickat", event);
 
         } catch (Exception e) {
-            log.error("Fel vid SNS publish (event={}", event, e);
+            log.error("Fel vid SNS publish (event={}", event, e); // Logga fel men inte föra vidare, notifieringsfel ska inte stoppa flödet
         }
     }
 
